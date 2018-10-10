@@ -1,0 +1,200 @@
+5.FRONT END https://www.youtube.com/watch?v=JKC8_Ymfm5c
+================================================================
+1. ke H:\laragon\www\rubyonrails\Build CMS\cms1\app\assets\stylesheets
+hapus :
+- home.scss
+- pages.scss
+2. ubah application.css menjadi application.css.scss
+3. buat file tambahkan main.css.scss di H:\laragon\www\rubyonrails\Build CMS\cms1\app\assets\stylesheets\main.css.scss
+4. pada application.css.scss
+
+hapus  *= require_tree .
+
+sehingga menjadi :
+
+ //= require active_admin/editor/wysiwyg
+ *= require_self
+ */
+
+@import "bootstrap-sprockets";
+@import "bootstrap";
+@import "main";
+
+5. lalu buka localhost:3000 lalu cek code melalui page source view pastikan link css application dan yang diimport sudah terlink semua 
+6. kita akan coba menampilkan bootstrap example diview :
+- buka https://getbootstrap.com/docs/3.3/examples/jumbotron/
+terus copy dari div navbar sampai footer
+- paste di H:\laragon\www\rubyonrails\Build CMS\cms1\app\views\layouts\application.html.erb
+- lalu div class jumbotron dan  <div class="row">  <div class="col-md-4"> di cut pindahkan sementara ke file untiteled baru karena nanti akan digunakan pada page segment yield
+- cut  <%= yield %> pada application.html.erb pindahkan ke div bekas div rows tadi sehingga menjadi :
+
+  <div class="container">
+
+    <%= yield %>
+
+      <hr>
+
+      <footer>
+        <p>&copy; 2016 Company, Inc.</p>
+      </footer>
+    </div> <!-- /container -->
+
+- tambahkan flash dan notice setelah div container atau sebelum yield tadi
+
+sehingga : 
+   <div class="container">
+	<% if flash[:notice] = %>
+	<div class="alert alert-success"><%= flash[:notice] %></div>
+	<% end %>
+
+	<% if flash[:alert] = %>
+	<div class="alert alert-success"><%= flash[:alert] %></div>
+	<% end %>
+	
+    <%= yield %>
+
+      <hr>
+
+      <footer>
+        <p>&copy; 2016 Company, Inc.</p>
+      </footer>
+    </div> <!-- /container -->
+
+- pada page source crtl+u view-source:https://getbootstrap.com/docs/3.3/examples/jumbotron/ 
+buka jumbotron.css linknnya css : jumbotron.css, lalu copy isinya ke H:\laragon\www\rubyonrails\Build CMS\cms1\app\assets\stylesheets\main.css.scss :
+
+sehingga :
+
+/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+  padding-top: 50px;
+  padding-bottom: 20px;
+}
+
+- coba refresh localhost:3000
+
+- lalu pada application.html.erb hapus code ini : 
+
+<form class="navbar-form navbar-right">
+            <div class="form-group">
+              <input type="text" placeholder="Email" class="form-control">
+            </div>
+            <div class="form-group">
+              <input type="password" placeholder="Password" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-success">Sign in</button>
+          </form>
+
+- lalu pada  :
+
+<div id="navbar" class="navbar-collapse collapse">
+          
+</div><!--/.navbar-collapse -->
+
+tambahkan  :
+
+          <ul class="nav navbar-nav">
+          	<li><%= link_to "Home", root_path %></li>
+          	<% @pageNav.each do |page| %>
+          		<li><% link_to page.title, page_path(page.id) %></li>
+          	<% end %>
+          </ul>
+
+sehingga persis seperti ini :
+
+ <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+          	<li><%= link_to "Home", root_path %></li>
+          	<% @pageNav.each do |page| %>
+          		<li><%= link_to page.title, page_path(page.id) %></li>
+          	<% end %>
+          </ul>
+        </div><!--/.navbar-collapse -->
+
+7. buka application_controller.erb
+tambahkan setelah class ApplicationController < ActionController::Base :
+
+before_action :getPageNav
+
+dan tambahkan setelah protect_from_forgery with: :exception sebuah method getPageNav:
+
+ def getPageNav
+  	@pageNav = Page.where('menu_display = true && is_published = true').order(order: :asc)
+   end
+8. coba refresh web pastikan link sudah muncul sesuai halaman
+9. buka pages_controller.rb di H:\laragon\www\rubyonrails\Build CMS\cms1\app\controllers
+tambahkan setelah def show:
+	
+@page = Page.find(params[:id])
+if @page.is_published = false
+redirect_to root_path, alert:"This Page Doesnt Not Exist"
+end
+@sections = Section.all
+
+sehingga menjadi persis :
+
+10. buka views/pages/show.html.erb
+
+ganti :
+<h1>Pages#show</h1>
+<p>Find me in app/views/pages/show.html.erb</p>
+
+menjadi : 
+
+<h1><%= @page.title %></h1>
+<%= @page.body %>
+
+11. kita akan menambahkan featured pada pages
+rails g migration addFeaturedToPages featured:boolean
+rails db:migrate
+
+12. buka app/admin/page.rb
+pada form do |f| tambahkan input featured dan label featured 
+
+seperti ini : 
+f.inputs :featured, :label => "Featured"
+
+13. pada app/admin/page.rb
+pada permit_params tambahkan parameter untuk featured sehingga seperti ini :
+
+permit_params :title, :body, :order, :is_published, :section_id, :menu_display, :featured
+
+
+jika tidak dimasukan pada permit_params maka field yang dipost tidak akan terinsert ke database alias tidak berubah
+
+ini mirip mass assignment pada laravel.
+
+14.lalu refresh kembali pages coba lihat pada edit sudah ada input featured atau tidak
+
+15. untuk mengetes fungsi featured kita akan modif
+
+buka app/controllers/home_controllers.rb
+tambahkan pada definition/def/method show:
+
+@pages = Page.where("featured = true")
+
+sehingga menjadi : 
+
+class HomeController < ApplicationController
+  def show
+  	@pages = Page.where("featured =true")
+  end
+end
+
+16. buka views/home/show.html.erb
+
+lalu semua ubah/ganti :
+
+<h1>Home#show</h1>
+<p>Find me in app/views/home/show.html.erb</p>
+
+
+menjadi :
+
+<% @pages.each do |page| %>
+	<h1><%= page.title %></h1>
+	<%= page.body %>
+<% end %>
+
+17. coba nonaktifkan salah satu featured page di admin maka jika kita akses pada controller
+home maka tidak akan tampil data tersebut

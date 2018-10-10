@@ -1,0 +1,178 @@
+# VIDEO 3 Active Admin Part 1 : https://www.youtube.com/watch?v=KT5W3rAQLlA&list=PLskZP4iE0XzbY85TfrAqq4G_R9Q9ZVU-L&index=3
+
+REFERENSI :
+
+https://activeadmin.info/documentation.html
+https://code.tutsplus.com/tutorials/create-beautiful-administration-interfaces-with-active-admin--net-21729
+
+# SETUP ADMIN PACKAGES DEPENDENCY
+1. buka Gemfile
+tambahkan resource :
+gem 'activeadmin', github: 'activeadmin'
+gem 'devise'
+gem 'active_admin_editor'
+gem 'font-awesome-rails'
+gem 'bootstrap-sass', '~> 3.2.0'
+gem 'autoprefixer-rails'
+
+2. bundle install
+
+
+# untuk linux jika error 
+coba install :
+
+sudo apt-get install git-core
+
+# JIKA ERROR
+The latest bundler is 1.16.0.pre.3, but you are currently running 1.15.4.
+To update, run `gem install bundler --pre`
+
+[!] There was an error parsing `Gemfile`: Illformed requirement ["->3.2.0"]. Bun
+dler cannot continue.
+
+solusi :
+
+gem install bundler
+
+atau 
+
+gem update bundler
+
+# Jika error pada packages active_admin_editor
+- gem uninstall active_admin_editor
+- install versi terbaru :
+bisa dengan gem 'active_admin_editor', '~> 1.1'
+atau 
+melalui terminal : gem install active_admin_editor
+
+reff : https://rubygems.org/gems/active_admin_editor/versions/1.1.0
+
+# JIKA ERROR Rails Error - “cannot load such file — bcrypt_ext” on Windows 7, 64
+-gem uninstall bcrypt-ruby
+-gem uninstall bcrypt
+-gem install bcrypt --platform=ruby
+
+3. rails g active_admin:install atau rails generate active_admin:install # g itu generate
+jika error saat migrate coba hapus model , db migrate (cocokan dengan schema yg ada  di database), sama jika ada object migrate 
+pada routes
+
+4. rails db:migrate
+cek didatabase akan ada table baru :
+admin_users
+active_admin_comments
+5. coba cek di localhost:3000/admin
+
+jika error Undefined mixin 'box-shadow'. : 
+
+coba buka Gemfile ganti :
+gem 'active_admin_editor'
+
+menjadi :
+
+gem 'active_admin_editor', github: 'ejholmes/active_admin_editor'
+
+bundle install 
+
+6. coba buka rails localhost:3000/admin/login:
+masuk dengan user : example@admin.com pass: password
+
+# jika belum ada data user admin di mysql coba insert 
+## REF https://stackoverflow.com/questions/20447006/cant-log-into-active-admin-any-way-to-create-an-admin-user
+
+- buka gemfile uncoment gem 'bcrypt', '~> 3.1.7'
+- ketik rails console
+- lalu ketik satu satu perbaris :
+
+user = AdminUser.new
+user.email = "<your email>"
+user.password = "<your password>"
+user.save
+
+
+jika error saat insert coba tes debug pada terminal log dengan, 
+pastikan ada di console rails dengan perintah rails console coba ketikan :
+user.errors.full_messages
+
+lihat apa yang eror lalu perbaiki
+
+jika error rails-cannot-load-such-file-bcrypt :
+https://stackoverflow.com/questions/40733981/rails-cannot-load-such-file-bcrypt
+- Firstly uninstall bcrypt and bcrypt-ruby by running these two commands:
+- gem uninstall bcrypt and gem uninstall bcrypt-ruby
+- Install it again with gem install bcrypt --platform=ruby
+===== SEBENARNYA CUKUP SAMPAI LANGKAH INI ASALKAN PADA GAMEFILE SUDAH DI UNCOMMENT BCRYPT NYA======
+- In your Gemfile write gem 'bcrypt-ruby', '3.1.5', :require => 'bcrypt'
+- Then run bundle install and restart your rail server
+
+jika sudah coba insert lagi dengan rails console seperti langkah diatas
+user = AdminUser.new
+blablabla..
+
+6. coba login dengan user = example@admin.com pass = password
+pastikan sampai langkah ini berhasil login
+
+7. coba buka pada config/active_admin.rb # ini adalah pengaturan packages active adminnya
+coba kita disable comments fungsi pada active admin :
+
+cari #config.comments = false
+uncomment jadi config.comments = false
+
+# karena kita sudah membuat models, Section page dan Block maka kita membuat resourcenya Section, Page dan Block
+8.  rails g active_admin:resource Section
+9.  rails g active_admin:resource Page
+10. rails g active_admin:resource Block
+
+jika sudah silahkan lihat di admin akan ada menu section page dan block beserta isi data migrasinya sesuai pada model.
+
+utk resource tergantung nama model classnya misal tadi Section maka pada :resource Section dst
+
+11. coba buka section di admin lalu create satu value 
+jika error ActiveModel::ForbiddenAttributesError
+solusi buka app/admin/sections.rb lalu tambahkan :
+
+permit_params :name
+
+hingga menjadi : 
+
+ActiveAdmin.register Section do
+permit_params :name
+end
+
+12. Membuat Form Untuk Pages coba buka app/admin/pages.rb
+
+tambahkan sesudah ActiveAdmin.register Page do :
+
+form do |f|
+	f.inputs "Details" do
+		f.inputs :title, :label => "Title"
+		f.inputs :section, :label => "Section"
+		f.inputs :body, :label => "Body"
+		f.inputs :order, :label => "Order"
+		f.inputs :is_published, :label => "Published"
+		f.inputs :menu_display, :label => "Display in Menu"
+		f.actions
+		end
+	end
+
+
+13. coba buka menu pages dan coba create jika error ActiveModel::ForbiddenAttributesError in Admin::PagesController#create,
+solusinya tambahkan parameter setelah ActiveAdmin.register Page do :
+
+permit_params :title, :body, :order, :is_published, :section_id, :menu_display
+
+coba insert lagi pastikan sudah berhasil jika belum cek params kembali sesuai field yang berada di database.
+
+14. kita akan sortable pada data pages admin artinya menampilkan/memfilter kolom
+yang diinginkan pada datatables bawaan ruby kita akan menghilangkan 
+kolom body karena terlalu panjang berisi data text, buka app/admin/pages.rb
+
+tambahkan sebelum form do |f| atau sesudah ActiveAdmin.register Page do:
+
+index do
+	column :id
+	column :title, :sortable => :title
+	column :section, :sortable => :section
+	column :created_at, :sortable=> :created_at
+	column :order
+	actions
+end

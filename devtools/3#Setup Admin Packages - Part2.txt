@@ -1,0 +1,113 @@
+REFF 4 Active Admin Part 2 : 
+https://www.youtube.com/watch?v=K1p1kBaKOHE
+
+do itu seperti pada php {} ini isi statementnya sedangkan pada ruby do itu statementnya
+
+1. buka app/admin/block.rb
+
+tambahkan setelah ActiveAdmin.register Block do :
+
+permit_params :title, :show_title, :body, :position, :display, :class_suffix, :order, :is_published
+
+2. Membuat Form Untuk Blocks, buka app/admin/block.rb tambahkan setelah permit_params :
+
+
+form do |f|
+	f.inputs "Details" do
+		f.inputs :title, :label => "Title"
+		f.inputs :show_title, :label => "Show Title"
+		f.inputs :body, :label => "Body"
+		f.inputs :position, :label => "Position", :as => :select, :collection => [["Jumbotron","jumbotron"], ["Block","block"]]
+		f.inputs :display, :label => "Display", :as => :select, :collection => [["All Pages","all"], ["Homepage Only","home"], ["All But Homepage", "nohome"]]
+		f.inputs :order, :label => "Order"
+		f.inputs :class_suffix, :label => "Class Suffix"
+		f.inputs :is_published, :label => "Published"
+		f.actions
+		end
+	end
+
+
+3. coba buka page localhost/admin/blocks/new JIKA Error NoMethodError in Admin::Blocks#new dan highlight pada f.inputs :order, :label => "Order" maka,
+
+Solusinya kita tambah field order pada database dengan cara migrasi data kembali membuat field/kolom baru :
+buka terminal kita buat file migrasi baru dengan nama addOrderToBlocks dan membuat field order:integer:
+
+rails g migration addOrderToBlocks order:integer
+
+4. cek dan buka pastikan sudah ada file db/migrate/20171108151908_add_order_to_blocks.rb
+
+5. rails db:migrate
+cek didatabase pada table Blocks pastikan sudah ada field/kolom order yang tadi dimigrasi
+
+6. coba jalan kan rails s dan cek http://localhost:3000/admin/blocks/new pastikan sudah tidak error
+
+7. lalu kita filter lagi kolom datatablesnya yang ada di halaman block agar body tidak tampil dll, buka app/admin/block.rb
+tambahkan setelah permit_params atau sebelum form do |f| :
+
+index do
+	column :id
+	column :title, :sortable => :title
+	column :position, :sortable => :position
+	column :display, :sortable => :display
+	column :created_at, :sortable=> :created_at
+	column :order
+	actions
+end
+
+jadi yang akan ditampilkan hanya field diatas index do.
+
+8. pada app/admin.rb hapus :
+
+ div class: "blank_slate_container", id: "dashboard_default_message" do
+      span class: "blank_slate" do
+        span I18n.t("active_admin.dashboard_welcome.welcome")
+        small I18n.t("active_admin.dashboard_welcome.call_to_action")
+
+kita tambahkan sesuai seperti ini setelah content title: proc{ I18n.t("active_admin.dashboard") } do :
+
+  section "Recent Pages", :priority => 1 do
+            table_for Page.order("id desc").limit(20) do
+                column :id
+                column "Page Title", :title do |page|
+                    link_to page.title, [:admin, page]
+            end 
+                column :section, :sortable => :section
+                column :created_at
+        end
+    end
+
+
+lalu tambahkan juga table view section : setelah section recent pages diatas :
+
+           section "Recent Section", :priority => 1 do
+            table_for Section.order("id desc").limit(20) do
+                column :id
+                column "Section Name", :title do |section|
+                    link_to section.name, [:admin, section]
+            end 
+                column :created_at
+        end
+    end
+
+9. aktifkan wysiwyg editor pada active_admin_editor, buka app/assets/stylesheets/application.css
+
+pada application css tambahkan : 
+ //= require active_admin/editor/wysiwyg
+
+persis seperti :
+//= require active_admin/editor/wysiwyg
+ *= require_tree .
+ *= require_self
+ */
+
+
+10. jalankan rails g active_admin:editor jika belum ada packagesnya jika dijalankan conflict berarti sudah ada\
+
+11. buka app/admin/page.rb
+
+pada object form do |f|
+
+ubah :
+field input body menjadi :
+
+f.inputs :body, as :html_editor, :label => "Body"

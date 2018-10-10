@@ -1,0 +1,204 @@
+reff : 
+- https://www.youtube.com/watch?v=-YXLNjearZY&list=PLskZP4iE0XzbY85TfrAqq4G_R9Q9ZVU-L
+- https://www.youtube.com/watch?v=8Gj6okXI2Bs&index=2&list=PLskZP4iE0XzbY85TfrAqq4G_R9Q9ZVU-L
+
+#1.linux Application Database Setup
+1. sudo apt-get install lamp-server^
+2. root password 29912120
+3. sudo apt-get install libmysqlclient-dev
+4. mysql -u root -p 
+pw : 29912120
+5. kita tes mysql> show databases
+6. mysql> create database_railscms_development;
+7. mysql> grant all on railscms_development.* to 'railscms'@'localhost';
+8. mysql> grant all on railscms_test.* to 'railscms'@'localhost';
+9. mysql> show databases 
+akan ada 2 database tadi :
+
+- railscms_development
+- railscms_test
+
+10. kita coba select lihat user yang kita buat tadi di grant:
+mysql> select host, user from mysql.user;
+akan tampil user baru :
+
+-railscms
+
+11. kasih password user railscms :
+mysql> SET PASSWORD FOR 'railscms'@'localhost' = PASSWORD('railscms');
+12. mysql> FLUSH Privileges;
+13. sudo apt-get install phpmyadmin #pilih apache2
+14. password phpmyadmin : 29912120
+15. sudo nano /etc/apach2/apache2.conf
+
+tambah dipalingline bawah :
+
+ServerName ubuntu
+Include /etc/phpmyadmin/apache.conf
+
+ctrl+x save
+
+16. sudo service apache2 restart
+
+17. coba cek phpmyadmin : localhost/phpmyadmin
+
+18 user : root
+   pw   : 29912120
+
+dan cek db yg kita buat tadi :
+
+- railscms_development
+- railscms_test
+pastikan sudah ada
+
+
+# DEV APPLICATION
+
+19. buat folder railscms atau Build CMS # terserah pokonya
+20. cd Build CMS
+21. rails new . --no-ri --no-rdoc
+22. bundle install
+23. gem install mysql2
+24. buka Gemfile 
+kita uncomment gem 'sqlite3' menjadi #gem 'sqlite3'
+25.lalu karna kita akan menggunakan mysql sebagai db maka  tambahkan:
+gem 'mysql2'
+
+menjadi persis seperti ini :
+
+gem 'jbuilder', '~> 2.5'
+# Use Redis adapter to run Action Cable in production
+# gem 'redis', '~> 3.0'
+gem 'mysql2'
+# Use ActiveModel has_secure_password
+# gem 'bcrypt', '~> 3.1.7'
+26. lalu kita run bundle install lagi
+
+27. buka database.yml di folder config/database.yml
+lalu ganti adapter: sqlite3 menjadi adapter: mysql2
+pada untuk fungsi jenis default dan development 
+
+dan ubah nama database, username, password sesuai yang dibuat yaitu railscms_development
+
+hasilnya :
+
+default: &default
+  adapter: mysql2
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+development:
+  <<: *default
+  adapter: mysql2
+  database: railscms_development
+  username : railscms
+  password : 
+
+test:
+  <<: *default
+  adapter: mysql2
+  database: railscms_development
+  username : railscms
+  password : 
+
+production:
+  <<: *default
+  database: db/production.sqlite3
+
+
+CATATAN:
+sebenarnya selain cara diatas kita juga bisa menggunakan langsung membuat project dengan konfigurasi mysql dalam perintah
+===========
+rails new namaproject -d mysql
+
+28. rails s / rails server
+
+29. ##### BUAT CONTROLLER
+rails g controller home show
+rails g controller pages show
+
+otomatis perintah diatas membuat controller home/pages dan route controller cek di
+routes.rb pastikan pages/show dan home/show sudah tergenerate.
+30. coba kita tambahkan di routes.rb
+
+resources:pages, only: [:show]
+
+31. dan tambahkan index root :
+root 'home#show' 
+
+maka saat diakses akan muncul Find me in app/views/home/show.html.erb
+
+bahwa show.html.erb belum dibuat pada views/home
+coba anda buat show.html.erb :
+
+isi saja kontent maka akan bisa diakses kontent tersebut.
+
+32. ##### BUAT MODEL 
+rails g model section name:string
+
+maka akan otomatis membuat file models pada app/models/section.rb lalu akan
+membuat file db schema untuk migrate di db/migrate/20171108070431_create_sections.rb
+
+mirip seperti laravel ya.
+
+33. lalu kita migrasi kan db tadi
+rake db:migrate / rails db:migrate sama saja
+
+34. cek di database maka akan ada
+- ar_internal_metadata # ini metadata nya utk env biasanya bawaan ruby utk model development, testing atau default yg diconfig database.yml
+- schema_migrations # ini adalah schema migration nya 
+- sections # ini yang dibuat tadi dimodel
+
+35. teruskan membuat model page
+rails g model page title:string section_id:integer body:text order:integer is_published:boolean menu_display:boolean
+rails db:migrate / rake:db migrate
+
+36. teruskan membuat model block 
+rails g model block title:string body:text position:string display:string show
+_title:boolean class_suffix:string is_published:boolean
+rails db:migrate
+
+coba lihat di app/model akan ada model2 baru tadi dibuat
+
+37. buka page.rb di app/model/page.rb
+
+tambahkan belongs_to :section 
+
+sehingga :
+
+class Page < ApplicationRecord
+	belongs_to :section
+end
+
+belongsto sectio artinya  page ini bagian dari atau punya 1 section
+
+38. buka section.rb di app/model/section.rb
+tambahkan has_many :pages 
+
+sehingga : 
+
+class Section < ApplicationRecord
+	has_many :pages
+end
+
+has_many pages artinya model section ini punya banyak pages/halaman
+
+mirip seperti laravel eloquent.
+
+39. TEST DEBUG melalui terminal
+Kita bisa test driven debug controller yang sudah dibuat tadi home_controller dengan 
+menambahkan _test dibelakang nama controllersnya.
+
+rake test test/controllers/home_controller_test.rb
+
+jika tidak error nanti akan muncul log :
+
+Finished in 1.452964s, 1.3765 runs/s, 1.3765 assertions/s.
+2 runs, 2 assertions, 0 failures, 0 errors, 0 skips
+
+bahwa 0 eror 
+
+jika error :
+
+Finished in 0.228784s, 8.7419 runs/s, 0.0000 assertions/s.
+2 runs, 0 assertions, 0 failures, 2 errors, 0 skips

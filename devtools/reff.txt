@@ -1,0 +1,6 @@
+https://www.youtube.com/watch?v=KT5W3rAQLlA&list=PLskZP4iE0XzbY85TfrAqq4G_R9Q9ZVU-L&index=3
+
+
+ACTIVERECORD RUBY :
+http://guides.rubyonrails.org/v3.2/active_record_querying.html
+

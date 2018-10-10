@@ -1,0 +1,282 @@
+6. FRONT END BLOCKS : https://www.youtube.com/watch?v=ivF2MMUsklw&index=6&list=PLskZP4iE0XzbY85TfrAqq4G_R9Q9ZVU-L
+============================================================================================
+Catatan :
+<%= ini seperti echo pada php <?php echo
+<% ini seperti hanya <?php
+
+1. buka views/pages/show.html.erb
+tambahkan raw pada :
+
+<h1><%= @page.title %></h1>
+<%= @page.body %>
+
+
+sehingga : 
+
+<h1><%= @page.title %></h1>
+<%= raw @page.body %>
+
+2. buka views/home/show.html.erb
+
+tambahkan raw pada :
+<% @pages.each do |page| %>
+	<h1><%= page.title %></h1>
+	<%= page.body %>
+<% end %>
+
+sehingga :
+
+<% @pages.each do |page| %>
+	<h1><%= page.title %></h1>
+	<%= raw page.body %>
+<% end %>
+
+3. buat folder blocks di views jadi views/blocks
+4. buat file _block.html.erb dan _jumbotron.html.erb di views/blocks
+5. pada step 4#Front End Pages Menu.txt saat itu ada cut code ke untiltled 
+
+berisi div jumbotron dan div row
+
+copykan code div jumbotron ini ke _jumbotron.html.erb :
+
+ <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <h1>Hello, world!</h1>
+        <p>This is a template for a simple marketing or informational website. It includes a large callout called a jumbotron and three supporting pieces of content. Use it as a starting point to create something more unique.</p>
+        <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more &raquo;</a></p>
+      </div>
+    </div>
+
+
+
+copykan code div div row ini ke _block.html.erb :
+
+<!-- Example row of columns -->
+      <div class="row">
+        <div class="col-md-4">
+          <h2>Heading</h2>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        </div>
+        <div class="col-md-4">
+          <h2>Heading</h2>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+       </div>
+        <div class="col-md-4">
+          <h2>Heading</h2>
+          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        </div>
+      </div>
+
+6. buka views/layouts/application.html.erb
+
+lalu tambahkan kode render ini sebelum div class container atau sesudah navbar :
+
+<%= render 'blocks/_jumbotron' %>
+
+sehingga persis seperti ini :
+
+    </div><!--/.navbar-collapse -->
+    </div>
+    </nav>
+
+    <%= render 'blocks/jumbotron' %>
+
+    <div class="container">
+    <!-- Alert & Messages -->
+7. setelah itu masih pada file views/layouts/application.html.erb
+
+sebelum <% yield %> atau sesudah kode end pada flash tambahkan :
+<%= render 'blocks/_block' %>
+
+sehingga menjadi seperti :
+
+
+<% if flash[:alert] %>
+	<div class="alert alert-danger"><%= flash[:alert] %></div>
+	<% end %>
+
+		<%= render 'blocks/block' %> 
+
+		<%= yield %>
+	    <hr>
+
+karena render jadi yang tadinya pada views/blocks/_block.html.erb dan views/blocks/_jumbotron.html.erb 
+maka jika dipanggil render tidak perlu disertakan underscore (_) maka jadi seperti ini <%= render 'blocks/block' %>  dan <%= render 'blocks/jumbotron' %>   
+
+8. buka app/controllers/application_controller.rb
+tambahkan setelah kode definition / method getPageNav :
+
+ def getPageNav
+  	@pageNav = Page.where('menu_display = true && is_published = true').order(order: :asc)
+   end
+
+yaitu :
+
+
+   def getJumbotron
+   	@jumbotron = Block.where("position ='jumbotron'")   	
+   end
+
+   def getBlocks
+   	@blocks = Block.where("position = 'block'").order(order: :asc)
+   end
+
+sehingga menjadi :
+
+
+class ApplicationController < ActionController::Base
+
+	before_action :getPageNav
+
+  protect_from_forgery with: :exception
+
+  def getPageNav
+  	@pageNav = Page.where('menu_display = true && is_published = true').order(order: :asc)
+   end
+
+   def getJumbotron
+   	@jumbotron = Block.where("position ='jumbotron'")   	
+   end
+
+   def getBlocks
+   	@blocks = Block.where("position = 'block'").order(order: :asc)
+   end
+
+end
+
+
+9. buka views/blocks/_jumbotron.html.erb
+ubah menjadi seperti ini :
+
+ <!-- Main jumbotron for a primary marketing message or call to action -->
+<% if @jumbotron.exists? %>
+	<% @jumbotron.each do |jumbotron| %>
+		<% if params[:controller] == 'home' %>
+			<% if jumbotron.display == 'home' || jumbotron.display == 'all' %>
+				<div class="jumbotron">
+				  <div class="container">
+				    <h1><%= jumbotron.title %></h1>
+				    <%= jumbotron.body %>
+				  </div>
+				</div>
+			<% end %>
+		<% else %>
+			<% if jumbotron.display == 'nohome' || jumbotron.display == 'all' %>
+				<div class="jumbotron">
+				  <div class="container">
+				    <h1><%= jumbotron.title %></h1>
+				    <%= jumbotron.body %>
+				  </div>
+				</div>
+			<% end %>
+		<% end %>
+	<% end %>
+<% end %>
+
+10. buka application/controllers/application_controller.rb
+tambahkan pada before_action :getJumbotron dan :getBlocks
+
+seperti ini : 
+before_action :getPageNav, :getJumbotron, :getBlocks
+
+11. agar rapih tambahkan raw pada jumbotron.body
+
+
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<% if @jumbotron.exists? %>
+	<% @jumbotron.each do |jumbotron| %>
+		<% if params[:controller] == 'home' %>
+			<% if jumbotron.display == 'home' || jumbotron.display == 'all' %>
+				<div class="jumbotron">
+				  <div class="container">
+				    <h1><%= jumbotron.title %></h1>
+				    <%= raw jumbotron.body %>
+				  </div>
+				</div>
+			<% end %>
+		<% else %>
+			<% if jumbotron.display == 'nohome' || jumbotron.display == 'all' %>
+				<div class="jumbotron">
+				  <div class="container">
+				    <h1><%= jumbotron.title %></h1>
+				    <%= raw jumbotron.body %>
+				  </div>
+				</div>
+			<% end %>
+		<% end %>
+	<% end %>
+<% end %>
+
+12. buka views/blocks/_block.min.html.erb
+ubah menjadi seperti ini :
+<!-- Example row of columns -->
+<% if @blocks.exists? %>
+  <% @blocks.each_slice(3) do |block| %>
+    <div class="row">
+    <% block.each do |block| %>
+      <% if params[:controller] == 'home' %>
+          <% if block.display == 'home' || block.display == 'all' %>
+          <div class="col-md-4">
+            <% if block.show_title == true %>
+              <h2><%= block.title %></h2>
+            <% end %>
+            <%= raw block.body %>
+          </div>
+          <% end %>
+        <% else %>
+          <% if block.display == 'nohome' || block.display == 'all' %>
+           <div class="col-md-4">
+            <% if block.show_title == true %>
+              <h2><%= block.title %></h2>
+            <% end %>
+            <%= raw block.body %>
+          </div>
+          <% end %>
+        <% end %>
+    <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+13. lalu pada _jumbotron.html.erb juga tambahkan
+
+<% if jumbotron.show_title == true %>
+<h2><%= jumbotron.title %></h2>
+<% end %>
+
+sehingga :
+
+ <!-- Main jumbotron for a primary marketing message or call to action -->
+<% if @jumbotron.exists? %>
+	<% @jumbotron.each do |jumbotron| %>
+		<% if params[:controller] == 'home' %>
+			<% if jumbotron.display == 'home' || jumbotron.display == 'all' %>
+				<div class="jumbotron">
+				  <div class="container">
+				    <% if jumbotron.show_title == true %>
+		              <h2><%= jumbotron.title %></h2>
+		            <% end %>
+				    <%= raw jumbotron.body %>
+				  </div>
+				</div>
+			<% end %>
+		<% else %>
+			<% if jumbotron.display == 'nohome' || jumbotron.display == 'all' %>
+				<div class="jumbotron">
+				  <div class="container">
+				    <% if jumbotron.show_title == true %>
+		              <h2><%= jumbotron.title %></h2>
+		            <% end %>
+				    <%= raw jumbotron.body %>
+				  </div>
+				</div>
+			<% end %>
+		<% end %>
+	<% end %>
+<% end %>
+
+
